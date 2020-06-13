@@ -130,10 +130,68 @@ def update_table(new,HeaderTable,Head,minSupport):
 	return HeaderTable,Head
 
 def adjacent_adj(FPtree,new_Header,head,new_head,i,j):
-	pass
+	a=new_Header[head[i]][1]
+	b=new_Header[new_head[j]][1]
+	a1=Node(a.name,a.count-b.count,a.parent)
+	a.count=b.count
+	for key,value in a.children.items():
+		if key != b.name:
+			child=value
+			child.parent=a1
+			a1.children[chlid.name]=child
+			del(a.children[child.name])
+	b.parent=a.parent
+	a.parent=b
+	del(a.children[b.name])
+	par=b.parent
+	for key,value in par.children.items():
+		if key==b.name and value!=b:
+			X=value
+			b.count=X.count+b.count
+			for item,value in X.children.items():
+				value.parent=b
+				b.childeren[value.name]=value
+			del(X)
+
+	return FPtree
 
 def non_adjacent_adj(FPtree,new_Header,head,new_head,i,j):
-	pass
+	e=new_Header[new_Header[j]][1]
+	while e != None:
+		d=e.parent
+		while new_Header[d.name][0]< new_Header[e.name][0]:
+			d1=Node(d.name,d.count-e.count,None)
+			if d1.count!=0:
+				d.count=e.count
+				for key,value in d.children.items():
+					if key != e.name:
+						child=value
+						child.parent=d1
+						d1.children[chlid.name]=child
+						del(d.children[child.name])
+				
+
+				par=d.parent
+				for item,value in par.children.items():
+					if item == e.name and value != e:
+						X=value
+						e.count=X.count+e.count
+						for i,v in X.children.items():
+							v.parent=X.parent
+						del(X)
+					if item != e.name:
+						X=value
+						for i,v in X.children.items():
+							if i==e.name:
+								e.count=e.count+v.count
+								for i1,v1 in v.children.items():
+									v1.parent=v.parent
+								del(v)
+				e.parent=d.parent
+				d.parent=e
+				del(d.children[e.name])
+				d=e.parent
+	return FPtree
 
 def adjust_fcfp(FPtree,HeaderTable,head,minSupport,new_Header,new_head):
 	for i in range(len(head)):
@@ -171,6 +229,7 @@ def adjust_fcfp(FPtree,HeaderTable,head,minSupport,new_Header,new_head):
 					FPtree=non_adjacent_adj(FPtree,new_Header,head,new_head,i,j)
 
 
+
 #To add new dataset
 def add_data(NDS,FPTree,HeaderTable,Head,minSupport):
 	min_Support = minSupport  
@@ -203,12 +262,74 @@ def add_data(NDS,FPTree,HeaderTable,Head,minSupport):
 	print("Frequent Itemset using FPtree:")
 	for i in itemset:
 	    print(i)
+	f=int(input(("enter 0 to get association rules: ")))
+	if f==0:
+		confidence=int(input("enter confidence: "))
+		dataset=read_dataset(NDS)
+		print("association rule")
+		generate_association_rules(dataset,itemset,confidence)
+
+
+def get_support_count(v,dataset):
+    count=0
+    n=len(v)
+    a={}
+    x=0
+    for i in dataset:
+        a[x]=set(i)
+        x+=1
+    for key,value in a.items():
+        if v.issubset(value):
+            count+=1
+    return count
+
+def generate_association_rules(dataset,itemset,confidence):
+    for i in itemset:
+        count=get_support_count(set(i),dataset)
+        if len(i)==2:
+            x=i[0]
+            y=i[1]
+            x_count=get_support_count(set([x]),dataset)
+            y_count=get_support_count(set([y]),dataset)
+            if x_count!=0:
+                if((count/x_count)*100 >=confidence):
+                    print(x,"==>",y)
+            if y_count!=0:
+                if((count/y_count)*100 >=confidence):
+                    print(y,"==>",x)
+        if len(i)==3:
+            x=i[0]
+            y=i[1]
+            z=i[2]
+            x_count=get_support_count(set([y]+[z]),dataset)
+            y_count=get_support_count(set([x]+[z]),dataset)
+            z_count=get_support_count(set([x]+[y]),dataset)
+            if x_count!=0:
+                if((count/x_count)*100 >=confidence):
+                    print(y,"^",z,"==>",x)
+            if y_count!=0:
+                if((count/y_count)*100 >=confidence):
+                    print(x,"^",z,"==>",y)
+            if z_count!=0:
+                if((count/z_count)*100 >=confidence):
+                    print(x,"^",y,"==>",z)
+
+
+def read_dataset(file):
+    data=[]
+    with open(file,'r') as csvfile:
+        csvreader=csv.reader(csvfile)
+        for i in csvreader:
+            data.append(i)
+    #print("Data",data[:10])
+    return data
+
 
 
 
 ###############################################################################################
-min_Support = 2  
-csv_file ="test_dataset_1.csv"
+csv_file =input("enter dataset: ")
+min_Support = int(input("enter minimum support: "))
 txt_file = "data.txt"
 with open(txt_file, "w") as my_output_file:
     with open(csv_file, "r") as my_input_file:
@@ -231,6 +352,13 @@ for i in frequent_itemset:
 print("Frequent Itemset using FPtree:")
 for i in itemset:
     print(i)
+
+f=int(input(("enter 0 to get association rules: ")))
+if f==0:
+	confidence=int(input("enter confidence: "))
+	dataset=read_dataset(csv_file)
+	print("association rule")
+	generate_association_rules(dataset,itemset,confidence)
 ##############################################################################################
 loop=True
 while loop:
@@ -241,3 +369,5 @@ while loop:
 		add_data(NDS,FPtree,HeaderTable,Head,support)
 	else:
 		loop=False
+
+
